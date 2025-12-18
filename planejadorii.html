@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planejador de Conteúdo Capilar</title>
+    
+    <!-- Tailwind CSS (Estilos) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React e ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (Para entender o código React no navegador) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Estilos extras para esconder barra de rolagem mas manter funcionalidade */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Ícones (Substituindo a biblioteca externa por versões leves inline)
+        const Icons = {
+            Copy: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>,
+            Check: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 6 9 17l-5-5"/></svg>,
+            Info: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            Edit3: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>,
+            FileText: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
+            Settings: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+            Target: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            RefreshCw: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+            Share2: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        };
+
+        const ContentPlanner = () => {
+            const [activeTab, setActiveTab] = useState('metodo');
+            const [copiedId, setCopiedId] = useState(null);
+  
+            const initialTemplates = {
+                contexto: "Sou [SUA PROFISSÃO] e atendo em [SUA CIDADE]. Atuo com [SEU SERVIÇO PRINCIPAL] e quero atrair mais clientes que sofrem com [PROBLEMA QUE VOCÊ RESOLVE].",
+                exigencias: "EXIGÊNCIAS: Preciso de ideias de [BAIXO CUSTO], que possam ser feitas apenas com [MEU CELULAR] e tenho [10 minutos por dia] livres para produzir conteúdo. O foco neste conteúdo é [Exemplo: Meu evento de 2 dias de terapia capilar com preço promocional com 50% de desconto da primeira sessão]",
+                referencias: "O que funcionou bem antes foi quando mostrei [BASTIDORES/ANTES E DEPOIS]. Gosto de conteúdos diretos e sem enrolação.",
+                tarefas: "Você é meu Estrategista de Conteúdo Viral, treinado para identificar padrões ocultos, antecipar tendências e transformar dores reais em conteúdos com alto potencial de viralização.\nObjetivo central: gerar ATENÇÃO imediata e converter em vendas de serviços/produtos.\nRegra-mãe: em toda resposta, aplicar obrigatoriamente o Método CERTO (Contexto, Exigências, Referências, Tarefas e Observações) para personalizar tudo ao máximo.\nSua entrega: criar HOOKS (ganchos) para cada conteúdo solicitado, sempre com potencial de salvar, compartilhar, comentar e comprar.\nRegras obrigatórias:\nO hook precisa prender nos primeiros 3 segundos (curto, direto e forte).\nManter conexão com o contexto e narrativa (sem desvio).\nProibido soar clichê, genérico, fraco ou inútil.\nCada hook deve preparar o terreno para chamada para ação clara e ação imediata.\nConfirmação: Salve todas as informacoes do método certo como Posicionamento Oficial. Aguarde meus próximos prompts para iniciar a criação. Fala entendido após confirmar e memorizar essas informações e também coloque algo como: Entendi, salvo como posicionamento oficial, pode copiar e colar o primeiro prompt do seu planejador de conteúdo!",
+                observacoes: "Quero transmitir [CONFIANÇA/ALEGRIA]. Meu público são [MULHERES/HOMENS] entre [IDADE] anos que valorizam [QUALIDADE/RAPIDEZ]."
+            };
+
+            // --- Persistência (LocalStorage) ---
+            // Usando chave v4 para garantir atualização
+            const [methodForm, setMethodForm] = useState(() => {
+                const saved = localStorage.getItem('planner_methodForm_v4');
+                return saved ? JSON.parse(saved) : initialTemplates;
+            });
+
+            const [editedContent, setEditedContent] = useState(() => {
+                const saved = localStorage.getItem('planner_editedContent_v4');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            useEffect(() => {
+                localStorage.setItem('planner_methodForm_v4', JSON.stringify(methodForm));
+            }, [methodForm]);
+
+            useEffect(() => {
+                localStorage.setItem('planner_editedContent_v4', JSON.stringify(editedContent));
+            }, [editedContent]);
+            // -----------------------------------
+
+            const weeksData = [
+                {
+                id: 1,
+                title: "Aquecimento, Clareza e Educação",
+                goal: "O objetivo é fazer a pessoa entender que o problema dela é real e que a sua solução é prioridade.",
+                days: [
+                    {
+                    day: "Segunda",
+                    type: "Mitos do Nicho",
+                    title: "3 Mitos que atrapalham seu cliente",
+                    description: "Liste 3 crenças erradas que seu público tem e explique a verdade.",
+                    template: "🛑 3 MITOS sobre [SEU TEMA] que estão te atrapalhando hoje:\n\n1️⃣ '[MITO 1]' (Cuidado: [EXPLICAÇÃO RÁPIDA DO PORQUÊ É MENTIRA])\n2️⃣ '[MITO 2]' (Na verdade, [A VERDADE])\n3️⃣ '[MITO 3]' (O segredo está em [SUA SOLUÇÃO])\n\n💬 Você acreditava em algum desses? Me conta aqui embaixo! 👇\n\n#[SEUNICHO] #[TOPICO] #mitoseverdades"
+                    },
+                    {
+                    day: "Terça",
+                    type: "Autoridade",
+                    title: "Como identificar qualidade",
+                    description: "Ensine o cliente a diferenciar um bom profissional/produto de um ruim.",
+                    template: "🔎 Como saber se [PRODUTO/SERVIÇO] é de qualidade?\n\nUm bom [PROFISSIONAL] não promete [PROMESSA FALSA]. O que observar:\n✅ [CRITÉRIO TÉCNICO 1]\n✅ [CRITÉRIO TÉCNICO 2]\n✅ [CRITÉRIO TÉCNICO 3]\n\nSe te prometerem [ABSURDO]... fuja! 🏃‍♀️💨\n\n#[SEUNICHO] #qualidade #dica"
+                    },
+                    {
+                    day: "Quarta",
+                    type: "Educativo",
+                    title: "Termo técnico que confundem",
+                    description: "Escolha dois termos parecidos do seu nicho e explique a diferença.",
+                    template: "🤔 Você sabe a diferença entre [TERMO A] e [TERMO B]?\n\nMuitas pessoas confundem, mas na prática é bem diferente:\n\n🔹 [TERMO A]: [EXPLICAÇÃO SIMPLES]\n🔹 [TERMO B]: [EXPLICAÇÃO SIMPLES]\n\nPara o seu caso, o ideal seria [QUAL DELES?]. Vamos descobrir? Link na bio. 📅"
+                    },
+                    {
+                    day: "Quinta",
+                    type: "Comparação",
+                    title: "Jeito Difícil vs Jeito Correto",
+                    description: "Mostre o erro de tentar fazer sozinho vs a sua solução profissional.",
+                    template: "❌ O JEITO DIFÍCIL: Tentar [RESOLVER SOZINHO] usando [GAMBIARRA/DICA DE INTERNET] e continuar com [PROBLEMA].\n\n✅ O JEITO CORRETO: [SEU MÉTODO] + [ACOMPANHAMENTO] + [FERRAMENTA CERTA].\n\nPare de andar em círculos. Vamos resolver isso de vez? ✨👇"
+                    },
+                    {
+                    day: "Sexta",
+                    type: "Dúvida Frequente",
+                    title: "A pergunta que você mais recebe",
+                    description: "Responda a dúvida campeã do seu direct.",
+                    template: "💬 '[PERGUNTA MAIS COMUM QUE TE FAZEM]?'\n\nEssa é a pergunta que mais recebi esse ano! A resposta é: [SIM/NÃO/DEPENDE].\n\nIsso acontece porque [EXPLICAÇÃO TÉCNICA SIMPLIFICADA].\n\n[SEU PRODUTO/SERVIÇO] entra justamente para resolver isso. 💡"
+                    },
+                    {
+                    day: "Sábado",
+                    type: "Utilidade Pública",
+                    title: "Checklist Básico",
+                    description: "Um passo a passo rápido para o cliente aplicar já.",
+                    template: "📝 Checklist para não errar em [ATIVIDADE DO NICHO]:\n\n⬜ [AÇÃO 1 - Ex: Beber água]\n⬜ [AÇÃO 2 - Ex: Usar filtro solar]\n⬜ [AÇÃO 3]\n⬜ [AÇÃO 4]\n\nQuantos desses você já segue? Salva esse post para não esquecer! 💾"
+                    },
+                    {
+                    day: "Domingo",
+                    type: "Pessoal/Conexão",
+                    title: "Se eu começasse do zero hoje...",
+                    description: "Humanize mostrando o caminho das pedras que você percorreria.",
+                    template: "Se eu tivesse que começar no [SEU NICHO] do ZERO hoje, essa seria minha ordem:\n\n1. [PRIMEIRO PASSO FUNDAMENTAL]\n2. [MUDANÇA DE HÁBITO]\n3. [O QUE EVITAR NO INÍCIO]\n4. [INVESTIMENTO NECESSÁRIO]\n\nO resultado vem da constância. Bom domingo! ☕✨"
+                    }
+                ]
+                },
+                {
+                id: 2,
+                title: "Processo, Critérios e Método",
+                goal: "Mostrar que você tem um MÉTODO claro e não trabalha com 'achismos'.",
+                days: [
+                    {
+                    day: "Segunda",
+                    type: "Quebra de Crença",
+                    title: "Acham que é X, mas é Y",
+                    description: "Mostre que o sintoma visual esconde uma causa diferente.",
+                    template: "🤯 Você acha que o problema é [SINTOMA VISÍVEL], mas na verdade é [CAUSA REAL].\n\nQuando a base não está boa, o resultado não aparece. Não adianta [SOLUÇÃO PALIATIVA] se a origem do problema é [RAIZ DO PROBLEMA].\n\nVamos tratar a causa raiz? 👇"
+                    },
+                    {
+                    day: "Terça",
+                    type: "Bastidores/Método",
+                    title: "Seu processo em 3 etapas",
+                    description: "Simplifique seu serviço em 3 passos fáceis.",
+                    template: "Aqui no meu atendimento, seguimos 3 pilares inegociáveis:\n\n1️⃣ [ETAPA 1]: [O QUE ACONTECE AQUI?]\n2️⃣ [ETAPA 2]: [O QUE ACONTECE AQUI?]\n3️⃣ [ETAPA 3]: [RESULTADO FINAL]\n\nSem um desses, o processo falha. Qual deles você tem negligenciado?"
+                    },
+                    {
+                    day: "Quarta",
+                    type: "Didático",
+                    title: "Analogia Simples",
+                    description: "Explique algo complexo usando uma comparação do dia a dia.",
+                    template: "Imagine que [SEU TEMA] é como [UMA PLANTA/UM CARRO/UMA CASA]. 🌱\n\nSe você não [CUIDAR DO SOLO/TROCAR O ÓLEO], não adianta [REGAR AS FOLHAS/PINTAR A LATARIA].\n\nO meu método trabalha justamente na base para o resultado durar. Simples assim."
+                    },
+                    {
+                    day: "Quinta",
+                    type: "Critério Técnico",
+                    title: "Simples vs Complexo",
+                    description: "Explique como você avalia o caso do cliente.",
+                    template: "👩‍💻 'Quanto tempo demora para ter resultado?'\n\nQuando eu avalio seu caso, analiso:\n- [FATOR 1]\n- [FATOR 2]\n- [FATOR 3]\n\nCasos recentes = resposta rápida.\nCasos antigos = paciência e constância.\n\nAgende sua avaliação para descobrirmos seu tempo! ⏳"
+                    },
+                    {
+                    day: "Sexta",
+                    type: "Alerta",
+                    title: "Hábitos que atrasam resultados",
+                    description: "Erros invisíveis que o cliente comete na rotina.",
+                    template: "🚫 3 coisas que você faz sem perceber e atrasam seu resultado:\n\n1. [HÁBITO RUIM 1]\n2. [HÁBITO RUIM 2]\n3. [HÁBITO RUIM 3]\n\nQual desses é seu ponto fraco? Confessa aqui! 😅"
+                    },
+                    {
+                    day: "Sábado",
+                    type: "Estratégico",
+                    title: "A pergunta errada vs a certa",
+                    description: "Ensine o cliente a valorizar o que importa.",
+                    template: "💡 Em vez de perguntar 'Qual o preço?', pergunte: 'Qual é a CAUSA do meu problema?'\n\nInvestir sem saber a causa é jogar dinheiro fora.\n\nInvista no diagnóstico primeiro. Seu bolso agradece. 💰✨"
+                    },
+                    {
+                    day: "Domingo",
+                    type: "Bastidores",
+                    title: "O que ninguém vê",
+                    description: "Mostre sua organização, estudo ou preparação.",
+                    template: "(Foto da sua mesa de trabalho/estudos)\n\nDomingo também é dia de planejar a semana dos clientes. Analisando [DADOS], ajustando [ESTRATÉGIAS] e estudando.\n\nQuando você contrata meu serviço, existe todo um estudo prévio para te entregar o melhor resultado. 📚💖 #bastidores"
+                    }
+                ]
+                },
+                {
+                id: 3,
+                title: "Profundidade e Autoridade Técnica",
+                goal: "Consolidar você como referência técnica e preparar o terreno para a venda.",
+                days: [
+                    {
+                    day: "Segunda",
+                    type: "Erro Comum",
+                    title: "Erro de iniciante",
+                    description: "Aponte um erro clássico de quem tenta fazer sozinho.",
+                    template: "⚠️ O maior erro de quem começa em [SEU NICHO] sozinho:\n\nAchar que 'mais é melhor'. Fazer [EXCESSO DE ALGO] achando que vai acelerar o resultado.\n\nO [CORPO/SISTEMA/NEGÓCIO] precisa de tempo. O excesso causa [CONSEQUÊNCIA RUIM]. 😱\n\nMenos é mais, desde que seja a estratégia certa."
+                    },
+                    {
+                    day: "Terça",
+                    type: "Carta Aberta",
+                    title: "Antes de me procurar...",
+                    description: "Alinhe expectativas e filtre clientes comprometidos.",
+                    template: "💌 Uma carta aberta para quem quer ser meu cliente:\n\nEu não faço milagre, eu faço [SEU MÉTODO]. 🧬\nPreciso que você se comprometa com [A PARTE DO CLIENTE].\nO resultado é uma construção conjunta.\n\nSe você topa essa parceria, eu vou dar 110% de mim. Vamos juntos? 🤝"
+                    },
+                    {
+                    day: "Quarta",
+                    type: "Estudo de Caso",
+                    title: "O que aprendi com casos reais",
+                    description: "Conte uma história de sucesso sem expor nomes (anonimizado).",
+                    template: "Tive um caso recente onde [SITUAÇÃO DO CLIENTE]. Ajustamos apenas [O QUE VOCÊ MUDOU]...\n\nEm [TEMPO], o resultado foi [RESULTADO ALCANÇADO]! 😍\n\nÀs vezes, a solução é mais simples do que parece, só precisa do olhar treinado. ✨"
+                    },
+                    {
+                    day: "Quinta",
+                    type: "Quebra de Objeção",
+                    title: "A parte que gera confusão",
+                    description: "Esclareça mitos sobre produtos x serviço profissional.",
+                    template: "🛁 '[PRODUTO X] funciona?'\n\nA verdade dolorida: O [PRODUTO] é apenas uma ferramenta. Ele ajuda, mas SOZINHO não resolve [PROBLEMA COMPLEXO].\n\nEle é coadjuvante. O ator principal é [SUA ESTRATÉGIA]. Não jogue dinheiro fora esperando milagre do lugar errado! 💸"
+                    },
+                    {
+                    day: "Sexta",
+                    type: "Sinais de Sucesso",
+                    title: "3 Sinais de que está dando certo",
+                    description: "Ensine a cliente a observar a própria evolução (pequenas vitórias).",
+                    template: "🎉 Como saber se está funcionando?\n\n1. [SINAL DE MELHORA 1]\n2. [SINAL DE MELHORA 2]\n3. [SINAL DE MELHORA 3]\n\nSe você notou algum desses, comemore! Estamos no caminho certo. 🚀"
+                    },
+                    {
+                    day: "Sábado",
+                    type: "Prova Social",
+                    title: "Antes vs Depois (Foco no Processo)",
+                    description: "Mostre a transformação de estado emocional ou rotina, não só estética.",
+                    template: "⬅️ ANTES: [DOR/SENTIMENTO RUIM], [ROTINA BAGUNÇADA].\n➡️ DEPOIS: [ALÍVIO/SENTIMENTO BOM], [ROTINA ORGANIZADA].\n\nA transformação visual é consequência. A verdadeira mudança acontece na [AUTOESTIMA/CONFIANÇA]. 💖 #antesedepois"
+                    },
+                    {
+                    day: "Domingo",
+                    type: "Mantra",
+                    title: "Conselho que mais repito",
+                    description: "Sua frase de efeito ou filosofia de trabalho.",
+                    template: "✨ [RESULTADO] é reflexo de [ROTINA].\n\nNão adianta vir na consulta 1x e passar o mês todo fazendo tudo errado. A constância vence a intensidade.\n\nUma semana abençoada para nós! 🙏"
+                    }
+                ]
+                },
+                {
+                id: 4,
+                title: "Tendências e Fechamento (Venda)",
+                goal: "Apontar futuro, criar urgência e vender seu evento ou serviço.",
+                days: [
+                    {
+                    day: "Segunda",
+                    type: "Futuro",
+                    title: "O que vai mudar no futuro",
+                    description: "Introduza a necessidade de se atualizar/cuidar agora.",
+                    template: "🔮 O futuro de [SEU NICHO] é [TENDÊNCIA].\n\nNo próximo ano, quem continuar focando só em [VELHO HÁBITO] vai ficar para trás. A tendência é [NOVA TECNOLOGIA/MÉTODO].\n\nPor isso criei o ✨ [NOME DO SEU EVENTO/PRODUTO] ✨, para você já sair na frente!"
+                    },
+                    {
+                    day: "Terça",
+                    type: "Evolução",
+                    title: "Práticas Obsoletas",
+                    description: "Mostre que você evoluiu e oferece o que há de mais moderno.",
+                    template: "🗑️ Coisas que deixei para trás:\n- [PRÁTICA ANTIGA 1]\n- [PRÁTICA ANTIGA 2]\n- Promessas vazias\n\nEu evoluí porque o mercado evoluiu. E é essa tecnologia de ponta que eu levo para você. 💎"
+                    },
+                    {
+                    day: "Quarta",
+                    type: "Diferenciação",
+                    title: "Bom vs Excelente",
+                    description: "Valorize a experiência premium do seu serviço.",
+                    template: "⭐ A diferença entre um atendimento BOM e um EXCELENTE está nos detalhes.\n\nNo [SEU EVENTO/SERVIÇO], você não vai só '[FAZER O BÁSICO]'. Você vai ter:\n- [BÔNUS 1]\n- [BÔNUS 2]\n- [EXPERIÊNCIA DIFERENCIADA]\n\nÉ uma experiência completa. Quem vem?"
+                    },
+                    {
+                    day: "Quinta",
+                    type: "Checklist de Preparação",
+                    title: "Como se preparar",
+                    description: "Comece a criar compromisso na mente do cliente.",
+                    template: "📝 Meta para o próximo ciclo: [OBJETIVO GRANDE]!\n\nPara isso, precisamos começar AGORA:\n1. [PASSO 1] (check)\n2. [PASSO 2] (check)\n3. Garantir vaga no [SEU EVENTO] (falta esse!)\n\nComenta 'EU QUERO' que te explico como funciona. 👇"
+                    },
+                    {
+                    day: "Sexta",
+                    type: "Decisão",
+                    title: "A mudança inteligente",
+                    description: "Chamada para Ação (CTA) direta e lógica.",
+                    template: "Você pode continuar empurrando com a barriga e reclamando de [PROBLEMA]... 🤷‍♀️\n\nOU pode tomar a decisão inteligente de agendar seu diagnóstico e resolver.\n\nO [SEU EVENTO/PROMOÇÃO] é a oportunidade perfeita (e com condição especial) para dar esse primeiro passo. Vamos? 🚀"
+                    },
+                    {
+                    day: "Sábado",
+                    type: "Antítese",
+                    title: "O que ver menos no futuro",
+                    description: "Reforce a dor de não se cuidar/atualizar.",
+                    template: "🚫 O que eu quero ver MENOS no próximo ano:\n- [ERRO COMUM 1]\n- [ERRO COMUM 2]\n- [SEU TEMA] ficando em último lugar na lista de prioridades\n\nVamos mudar essa estatística juntos? 💖"
+                    },
+                    {
+                    day: "Domingo",
+                    type: "Venda Final",
+                    title: "O convite final",
+                    description: "Chamada de urgência/escassez para o evento.",
+                    template: "🥂 Se você quer começar o ano já com [RESULTADO DESEJADO]...\n\nGaranta sua vaga no [NOME DO SEU EVENTO]. Vai ser o seu ponto de virada.\n\nAs vagas são limitadas. Clica no link da bio e vem! ✨"
+                    }
+                ]
+                }
+            ];
+
+            const handleCopy = (text, id) => {
+                const textToCopy = editedContent[id] !== undefined ? editedContent[id] : text;
+                
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        setCopiedId(id);
+                        setTimeout(() => setCopiedId(null), 2000);
+                    }
+                } catch (err) {
+                    console.error('Erro ao copiar', err);
+                }
+                document.body.removeChild(textArea);
+            };
+
+            const handleEdit = (id, newText) => {
+                setEditedContent(prev => ({ ...prev, [id]: newText }));
+            };
+            
+            const handleMethodChange = (field, value) => {
+                setMethodForm(prev => ({ ...prev, [field]: value }));
+            };
+            
+            const resetMethod = () => {
+                if(window.confirm('Deseja reiniciar o formulário para os modelos originais? Isso apagará suas edições.')) {
+                    setMethodForm(initialTemplates);
+                }
+            };
+
+            const generatedMethodText = `* Contexto: ${methodForm.contexto}\n* Exigências: ${methodForm.exigencias}\n* Referências: ${methodForm.referencias}\n* Tarefas: ${methodForm.tarefas}\n* Observações: ${methodForm.observacoes}`;
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12">
+                <header className="bg-white border-b border-rose-100 sticky top-0 z-20 shadow-sm">
+                    <div className="max-w-3xl mx-auto px-4 py-4">
+                    <div className="flex justify-between items-center mb-2">
+                        <h1 className="text-xl font-bold text-rose-900 flex items-center gap-2">
+                        <Icons.Settings className="w-5 h-5 text-rose-500" />
+                        Template de Planejamento
+                        </h1>
+                        <span className="text-xs font-medium text-rose-400 bg-rose-50 px-2 py-1 rounded-full">
+                        @Elicostamkt
+                        </span>
+                    </div>
+                    <p className="text-sm text-slate-500 leading-tight">
+                        Guia estratégico de conteúdo para adaptar e aplicar.
+                    </p>
+                    </div>
+
+                    <div className="flex overflow-x-auto no-scrollbar border-t border-slate-100 bg-white">
+                    <button
+                        onClick={() => setActiveTab('metodo')}
+                        className={`flex-none whitespace-nowrap px-4 py-3 text-sm font-bold transition-colors border-b-2 flex items-center gap-2 ${
+                        activeTab === 'metodo'
+                            ? 'border-rose-600 text-rose-700 bg-rose-50'
+                            : 'border-transparent text-slate-600 hover:text-rose-500 hover:bg-slate-50'
+                        }`}
+                    >
+                        <Icons.Target className="w-4 h-4" />
+                        Método Certo
+                    </button>
+                    {weeksData.map((week, index) => (
+                        <button
+                        key={week.id}
+                        onClick={() => setActiveTab(index)}
+                        className={`flex-none whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                            activeTab === index
+                            ? 'border-rose-500 text-rose-600 bg-rose-50/50'
+                            : 'border-transparent text-slate-500 hover:text-rose-400'
+                        }`}
+                        >
+                        Semana {week.id}
+                        </button>
+                    ))}
+                    </div>
+                </header>
+
+                <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+                    {activeTab === 'metodo' ? (
+                        <div className="space-y-6">
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-rose-100 rounded-lg text-rose-600">
+                                            <Icons.Target className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-lg font-bold text-slate-800">Definição do Método</h2>
+                                            <p className="text-sm text-slate-500">Substitua os textos entre [ ] com seus dados.</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={resetMethod} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors" title="Reiniciar Modelo">
+                                        <Icons.RefreshCw className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Contexto</label>
+                                            <textarea 
+                                                value={methodForm.contexto}
+                                                onChange={(e) => handleMethodChange('contexto', e.target.value)}
+                                                className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none h-32 resize-none placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Exigências</label>
+                                            <textarea 
+                                                value={methodForm.exigencias}
+                                                onChange={(e) => handleMethodChange('exigencias', e.target.value)}
+                                                className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none h-32 resize-none placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Referências</label>
+                                            <textarea 
+                                                value={methodForm.referencias}
+                                                onChange={(e) => handleMethodChange('referencias', e.target.value)}
+                                                className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none h-32 resize-none placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Tarefas (Fixo)</label>
+                                            <textarea 
+                                                value={methodForm.tarefas}
+                                                readOnly
+                                                className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none h-64 resize-none placeholder:text-slate-300 opacity-80 cursor-not-allowed font-mono text-xs leading-relaxed"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Observações</label>
+                                            <textarea 
+                                                value={methodForm.observacoes}
+                                                onChange={(e) => handleMethodChange('observacoes', e.target.value)}
+                                                className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none h-32 resize-none placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-900 rounded-2xl shadow-2xl border border-rose-500/30 ring-4 ring-rose-500/10 overflow-hidden text-slate-200 mt-6 transform transition-all hover:shadow-rose-900/20">
+                                <div className="bg-slate-950 px-5 py-4 border-b border-slate-800 flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-rose-600 rounded text-white">
+                                            <Icons.FileText className="w-4 h-4" />
+                                        </div>
+                                        <span className="font-bold text-base text-white tracking-wide">ROTEIRO FINAL</span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleCopy(generatedMethodText, 'method-result')}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg ${
+                                            copiedId === 'method-result' 
+                                            ? 'bg-green-500 text-white transform scale-105' 
+                                            : 'bg-rose-600 hover:bg-rose-500 text-white hover:shadow-rose-500/50'
+                                        }`}
+                                    >
+                                        {copiedId === 'method-result' ? <><Icons.Check className="w-4 h-4" /> Copiado</> : <><Icons.Copy className="w-4 h-4" /> Copiar Tudo</>}
+                                    </button>
+                                </div>
+                                <div className="p-0">
+                                    <textarea
+                                        readOnly
+                                        value={generatedMethodText}
+                                        className="w-full h-80 p-6 bg-slate-900 text-slate-100 font-mono text-sm leading-relaxed outline-none resize-none selection:bg-rose-500/30"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="bg-rose-600 text-white p-6 rounded-2xl shadow-lg transform transition-all hover:scale-[1.01]">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                                <Icons.Info className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                <h2 className="text-lg font-bold mb-1">{weeksData[activeTab].title}</h2>
+                                <p className="text-rose-100 text-sm leading-relaxed opacity-90">
+                                    {weeksData[activeTab].goal}
+                                </p>
+                                </div>
+                            </div>
+                            </div>
+
+                            <div className="space-y-6">
+                            {weeksData[activeTab].days.map((day, idx) => {
+                                const uniqueId = `${weeksData[activeTab].id}-${idx}`;
+                                const contentValue = editedContent[uniqueId] !== undefined 
+                                ? editedContent[uniqueId] 
+                                : day.template;
+
+                                return (
+                                <div key={idx} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition-shadow duration-300">
+                                    <div className="bg-slate-50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                        <span className="bg-slate-200 text-slate-700 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">
+                                        {day.day}
+                                        </span>
+                                        <span className="text-xs font-medium text-rose-500 flex items-center gap-1">
+                                            {day.type}
+                                        </span>
+                                    </div>
+                                    </div>
+
+                                    <div className="p-5">
+                                    <h3 className="font-bold text-lg text-slate-800 mb-1">{day.title}</h3>
+                                    <p className="text-sm text-slate-500 mb-4">{day.description}</p>
+
+                                    <div className="relative mt-2">
+                                        <div className="absolute -top-3 left-2 bg-white px-1 text-xs font-medium text-slate-400 flex items-center gap-1">
+                                        <Icons.Edit3 className="w-3 h-3" />
+                                        Edite para o seu nicho
+                                        </div>
+                                        <textarea
+                                        value={contentValue}
+                                        onChange={(e) => handleEdit(uniqueId, e.target.value)}
+                                        className="w-full h-48 p-4 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none resize-none font-mono leading-relaxed transition-all"
+                                        />
+                                    </div>
+                                    
+                                    <div className="flex gap-3 mt-4">
+                                        <button
+                                        onClick={() => handleCopy(day.template, uniqueId)}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold transition-all duration-200 transform active:scale-95 ${
+                                            copiedId === uniqueId
+                                            ? 'bg-green-500 text-white shadow-green-200'
+                                            : 'bg-rose-600 text-white shadow-rose-200 hover:bg-rose-700 shadow-lg'
+                                        }`}
+                                        >
+                                        {copiedId === uniqueId ? (
+                                            <>
+                                            <Icons.Check className="w-5 h-5" />
+                                            Copiado!
+                                            </>
+                                        ) : (
+                                            <>
+                                            <Icons.Copy className="w-5 h-5" />
+                                            Copiar Legenda
+                                            </>
+                                        )}
+                                        </button>
+                                        
+                                        <button className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors" title="Reiniciar texto">
+                                            <Icons.Share2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    </div>
+                                </div>
+                                );
+                            })}
+                            </div>
+                        </>
+                    )}
+                </main>
+
+                <footer className="text-center text-slate-400 text-xs py-8">
+                    <p>Desenvolvido para Terapia Capilar Day</p>
+                    <p className="mt-1">Planejamento Original: @Elicostamkt</p>
+                </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ContentPlanner />);
+    </script>
+</body>
+</html>
