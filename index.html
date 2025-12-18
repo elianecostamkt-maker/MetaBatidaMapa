@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+                <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -32,7 +32,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Ícones (Substituindo a biblioteca Lucide por versões leves inline)
+        // Ícones (Substituindo a biblioteca externa por versões leves inline)
         const Icons = {
             Copy: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>,
             Check: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 6 9 17l-5-5"/></svg>,
@@ -51,29 +51,30 @@
   
             const initialTemplates = {
                 contexto: "Sou [SUA PROFISSÃO] e atendo em [SUA CIDADE]. Atuo com [SEU SERVIÇO PRINCIPAL] e quero atrair mais clientes que sofrem com [PROBLEMA QUE VOCÊ RESOLVE].",
-                exigencias: "Preciso de ideias de [BAIXO CUSTO], que possam ser feitas apenas com [MEU CELULAR] e tenho [2 HORAS] livres por semana para produzir.",
+                exigencias: "EXIGÊNCIAS: Preciso de ideias de [BAIXO CUSTO], que possam ser feitas apenas com [MEU CELULAR] e tenho [10 minutos por dia] livres para produzir conteúdo. O foco neste conteúdo é [Exemplo: Meu evento de 2 dias de terapia capilar com preço promocional com 50% de desconto da primeira sessão]",
                 referencias: "O que funcionou bem antes foi quando mostrei [BASTIDORES/ANTES E DEPOIS]. Gosto de conteúdos diretos e sem enrolação.",
-                tarefas: "A partir do roteiro preenchido pela pessoa, siga o Método Certo e gere respostas personalizadas.\n\nO método consiste em adaptar ideias de conteúdo para Reels/Stories com foco total em [CONSEGUIR AGENDAMENTOS/VENDER], respeitando o estilo, público e objetivos descritos.\nAguarde os prompts e siga conforme o que for enviado.",
+                tarefas: "Você é meu Estrategista de Conteúdo Viral, treinado para identificar padrões ocultos, antecipar tendências e transformar dores reais em conteúdos com alto potencial de viralização.\nObjetivo central: gerar ATENÇÃO imediata e converter em vendas de serviços/produtos.\nRegra-mãe: em toda resposta, aplicar obrigatoriamente o Método CERTO (Contexto, Exigências, Referências, Tarefas e Observações) para personalizar tudo ao máximo.\nSua entrega: criar HOOKS (ganchos) para cada conteúdo solicitado, sempre com potencial de salvar, compartilhar, comentar e comprar.\nRegras obrigatórias:\nO hook precisa prender nos primeiros 3 segundos (curto, direto e forte).\nManter conexão com o contexto e narrativa (sem desvio).\nProibido soar clichê, genérico, fraco ou inútil.\nCada hook deve preparar o terreno para chamada para ação clara e ação imediata.\nConfirmação: Salve todas as informacoes do método certo como Posicionamento Oficial. Aguarde meus próximos prompts para iniciar a criação. Fala entendido após confirmar e memorizar essas informações e também coloque algo como: Entendi, salvo como posicionamento oficial, pode copiar e colar o primeiro prompt do seu planejador de conteúdo!",
                 observacoes: "Quero transmitir [CONFIANÇA/ALEGRIA]. Meu público são [MULHERES/HOMENS] entre [IDADE] anos que valorizam [QUALIDADE/RAPIDEZ]."
             };
 
             // --- Persistência (LocalStorage) ---
+            // Usando chave v4 para garantir atualização
             const [methodForm, setMethodForm] = useState(() => {
-                const saved = localStorage.getItem('planner_methodForm');
+                const saved = localStorage.getItem('planner_methodForm_v4');
                 return saved ? JSON.parse(saved) : initialTemplates;
             });
 
             const [editedContent, setEditedContent] = useState(() => {
-                const saved = localStorage.getItem('planner_editedContent');
+                const saved = localStorage.getItem('planner_editedContent_v4');
                 return saved ? JSON.parse(saved) : {};
             });
 
             useEffect(() => {
-                localStorage.setItem('planner_methodForm', JSON.stringify(methodForm));
+                localStorage.setItem('planner_methodForm_v4', JSON.stringify(methodForm));
             }, [methodForm]);
 
             useEffect(() => {
-                localStorage.setItem('planner_editedContent', JSON.stringify(editedContent));
+                localStorage.setItem('planner_editedContent_v4', JSON.stringify(editedContent));
             }, [editedContent]);
             // -----------------------------------
 
@@ -439,11 +440,11 @@
                                     
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Tarefas</label>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Tarefas (Fixo)</label>
                                             <textarea 
                                                 value={methodForm.tarefas}
-                                                onChange={(e) => handleMethodChange('tarefas', e.target.value)}
-                                                className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none h-32 resize-none placeholder:text-slate-300"
+                                                readOnly
+                                                className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500 outline-none h-64 resize-none placeholder:text-slate-300 opacity-80 cursor-not-allowed font-mono text-xs leading-relaxed"
                                             />
                                         </div>
                                         <div>
@@ -585,5 +586,4 @@
         root.render(<ContentPlanner />);
     </script>
 </body>
-
 </html>
